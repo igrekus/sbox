@@ -2,7 +2,7 @@ import dbman
 from suggestionmodel import SuggestionModel
 from PyQt5 import uic
 from PyQt5.QtWidgets import QMainWindow, QAbstractItemView, QDataWidgetMapper
-from PyQt5.QtCore import Qt, QSortFilterProxyModel, QModelIndex
+from PyQt5.QtCore import Qt, QSortFilterProxyModel, QItemSelectionModel
 
 
 class MainWindow(QMainWindow):
@@ -24,7 +24,7 @@ class MainWindow(QMainWindow):
         self.initApp()
 
     def initApp(self):
-        # init instabces
+        # init instances
         ok = self.m_dbman.connectToDatabase()
         if not ok:
             raise RuntimeError("Database connection problem.")
@@ -32,20 +32,19 @@ class MainWindow(QMainWindow):
         # init models
         self.m_model_suggestions.initModel()
 
-        self.m_data_mapper.setModel(self.m_model_search_proxy)
+        # self.m_data_mapper.setModel(self.m_model_search_proxy)
         # self.m_data_mapper.setModel(self.m_model_suggestions)
-        self.m_data_mapper.setSubmitPolicy(QDataWidgetMapper.ManualSubmit)
-        self.m_data_mapper.setOrientation(Qt.Horizontal)
-        self.m_data_mapper.addMapping(self.ui.editId, 0)
-        self.m_data_mapper.addMapping(self.ui.textText, 1)
-        self.m_data_mapper.addMapping(self.ui.editAuthor, 2)
-        self.m_data_mapper.addMapping(self.ui.editApprover, 3)
-        self.m_data_mapper.addMapping(self.ui.radioActive, 4)
-        self.m_data_mapper.toFirst()
+        # self.m_data_mapper.setSubmitPolicy(QDataWidgetMapper.ManualSubmit)
+        # self.m_data_mapper.setOrientation(Qt.Horizontal)
+        # self.m_data_mapper.addMapping(self.ui.editId, 0)
+        # self.m_data_mapper.addMapping(self.ui.textText, 2)
+        # self.m_data_mapper.addMapping(self.ui.editAuthor, 3)
+        # self.m_data_mapper.addMapping(self.ui.editApprover, 4)
+        # self.m_data_mapper.addMapping(self.ui.checkActive, 5)
 
         # init UI
         # self.ui.tableSuggestions.setModel(self.m_model_search_proxy)
-        # self.ui.tableSuggestions.setModel(self.m_model_suggestions)
+        self.ui.tableSuggestions.setModel(self.m_model_suggestions)
         self.ui.tableSuggestions.setSelectionMode(QAbstractItemView.SingleSelection)
         self.ui.tableSuggestions.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.ui.tableSuggestions.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -56,19 +55,59 @@ class MainWindow(QMainWindow):
         self.ui.tableSuggestions.verticalHeader().setVisible(False)
         self.ui.tableSuggestions.verticalHeader().setDefaultSectionSize(20)
 
+        # self.ui.radioActive.setVisible(False)
+        # self.ui.radioNonactive.setVisible(False)
+
+        self.ui.btnSave.setEnabled(False)
+
+        # setup signals
+        # self.ui.tableSuggestions.selectionModel().currentChanged.connect(self.onSelectionChanged)
+        # self.ui.tableSuggestions.clicked.connect(self.onTableClicked)
+        self.ui.btnAdd.clicked.connect(self.onBtnAddClicked)
+        self.ui.btnDel.clicked.connect(self.onBtnDelClicked)
+        self.ui.btnSave.clicked.connect(self.onBtnSaveClicked)
+
+        # show UI
         self.refreshView()
         self.show()
-        self.m_data_mapper.setCurrentIndex(0)
 
     def refreshView(self):
         twidth = self.ui.tableSuggestions.frameGeometry().width() - 30
-        self.ui.tableSuggestions.hide()
         self.ui.tableSuggestions.setColumnWidth(0, twidth * 0.05)
-        self.ui.tableSuggestions.setColumnWidth(1, twidth * 0.70)
-        self.ui.tableSuggestions.setColumnWidth(2, twidth * 0.10)
+        self.ui.tableSuggestions.setColumnWidth(1, twidth * 0.10)
+        self.ui.tableSuggestions.setColumnWidth(2, twidth * 0.60)
         self.ui.tableSuggestions.setColumnWidth(3, twidth * 0.10)
-        self.ui.tableSuggestions.setColumnWidth(4, twidth * 0.05)
-        self.ui.tableSuggestions.show()
+        self.ui.tableSuggestions.setColumnWidth(4, twidth * 0.10)
+        self.ui.tableSuggestions.setColumnWidth(5, twidth * 0.05)
 
+    def addSuggestion(self):
+        print("add sugg record")
+        src = self.m_model_suggestions.addSuggestionRecord()
+        # dest = self.m_model_search_proxy.mapFromSource(src)
+        # self.ui.tableSuggestions.selectionModel().setCurrentIndex(index, QItemSelectionModel.Select
+        #                                                           | QItemSelectionModel.Rows)
+
+    def updateSuggestion(self):
+        print("update rec action")
+
+    def delSuggestion(self):
+        print("del rec action")
+
+    # event handlers
     def resizeEvent(self, event):
         self.refreshView()
+
+    def onSelectionChanged(self, current, previous):
+        self.m_data_mapper.setCurrentModelIndex(current)
+
+    def onTableClicked(self, index):
+        self.m_data_mapper.setCurrentModelIndex(index)
+
+    def onBtnAddClicked(self):
+        self.addSuggestion()
+
+    def onBtnSaveClicked(self):
+        self.updateSuggestion()
+
+    def onBtnDelClicked(self):
+        self.delSuggestion()
