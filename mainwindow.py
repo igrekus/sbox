@@ -1,50 +1,77 @@
+import sys
 import dbman
+import typedefs
+import logindialog
 from suggestionmodel import SuggestionModel
 from PyQt5 import uic
-from PyQt5.QtWidgets import QMainWindow, QAbstractItemView, QDataWidgetMapper
+from PyQt5.QtWidgets import QMainWindow, QAbstractItemView, QDataWidgetMapper, QMessageBox, QDialog
 from PyQt5.QtCore import Qt, QSortFilterProxyModel, QItemSelectionModel
 
-
+# TODO record commentaries from other users
 class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        # super(MyDialog, self).__init__(parent)
+    def __init__(self, parent=None):
+        super(MainWindow, self).__init__(parent)
         # self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+
         # create instance variables
         self.ui = uic.loadUi("mw.ui", self)
 
-        self.m_dbman = dbman.DbManager(self)
+        self._dbman = dbman.DbManager(self)
 
-        self.m_model_suggestions = SuggestionModel(parent=self, dbmanager=self.m_dbman)
-        self.m_model_search_proxy = QSortFilterProxyModel(self)
-        self.m_model_search_proxy.setSourceModel(self.m_model_suggestions)
+        self._model_suggestions = SuggestionModel(parent=self, dbmanager=self._dbman)
+        self._model_search_proxy = QSortFilterProxyModel(self)
+        self._model_search_proxy.setSourceModel(self._model_suggestions)
 
-        self.m_data_mapper = QDataWidgetMapper(self)
+        self._data_mapper = QDataWidgetMapper(self)
 
-        self.initApp()
+        self._logged_user = {}
 
-    def initApp(self):
-        # init instances
-        ok = self.m_dbman.connectToDatabase()
-        if not ok:
+        self.initDialog()
+
+    def closeEvent(self, event):
+        event.accept()
+        sys.exit(10)  # TODO: lame hack to override event acceptance
+
+    def logIn(self, users):
+        dialog = logindialog.LoginDialog(parent=self, users=users, dbman=self._dbman)
+        if dialog.exec() == QDialog.Accepted:
+            self._logged_user = dialog.logged_user
+            print(self._logged_user)
+            return True
+        return False
+
+    def initDialog(self):
+        self.ui.btnReject.setVisible(False)
+        self.ui.btnApprove.setVisible(False)
+        self.show()
+
+        # setup db connection
+        if not self._dbman.connectToDatabase():
+            # TODO error handling
             raise RuntimeError("Database connection problem.")
 
         # init models
-        self.m_model_suggestions.initModel()
+        # TODO separate user_dict init
+        self._model_suggestions.initModel()
 
-        # self.m_data_mapper.setModel(self.m_model_search_proxy)
-        # self.m_data_mapper.setModel(self.m_model_suggestions)
-        # self.m_data_mapper.setSubmitPolicy(QDataWidgetMapper.ManualSubmit)
-        # self.m_data_mapper.setOrientation(Qt.Horizontal)
-        # self.m_data_mapper.addMapping(self.ui.editId, 0)
-        # self.m_data_mapper.addMapping(self.ui.textText, 2)
-        # self.m_data_mapper.addMapping(self.ui.editAuthor, 3)
-        # self.m_data_mapper.addMapping(self.ui.editApprover, 4)
-        # self.m_data_mapper.addMapping(self.ui.checkActive, 5)
+        # login
+        if not self.logIn(self._model_suggestions._users):
+            self.close()
+            return
+        self.setWindowTitle(self.windowTitle() + ", пользователь: " + self._logged_user["name"])
+
+        # init instances
+        self._data_mapper.setModel(self._model_search_proxy)
+        self._data_mapper.setSubmitPolicy(QDataWidgetMapper.ManualSubmit)
+        self._data_mapper.setOrientation(Qt.Horizontal)
+        self._data_mapper.addMapping(self.ui.editId, 0)
+        self._data_mapper.addMapping(self.ui.textText, 2)
+        self._data_mapper.addMapping(self.ui.editAuthor, 3)
+        self._data_mapper.addMapping(self.ui.editApprover, 4)
+        self._data_mapper.addMapping(self.ui.checkActive, 5)
 
         # init UI
-        # self.ui.tableSuggestions.setModel(self.m_model_search_proxy)
-        self.ui.tableSuggestions.setModel(self.m_model_suggestions)
+        self.ui.tableSuggestions.setModel(self._model_search_proxy)
         self.ui.tableSuggestions.setSelectionMode(QAbstractItemView.SingleSelection)
         self.ui.tableSuggestions.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.ui.tableSuggestions.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -55,59 +82,147 @@ class MainWindow(QMainWindow):
         self.ui.tableSuggestions.verticalHeader().setVisible(False)
         self.ui.tableSuggestions.verticalHeader().setDefaultSectionSize(20)
 
-        # self.ui.radioActive.setVisible(False)
-        # self.ui.radioNonactive.setVisible(False)
-
         self.ui.btnSave.setEnabled(False)
 
         # setup signals
-        # self.ui.tableSuggestions.selectionModel().currentChanged.connect(self.onSelectionChanged)
-        # self.ui.tableSuggestions.clicked.connect(self.onTableClicked)
+        # table
+        self.ui.tableSuggestions.selectionModel().currentChanged.connect(self.onSelectionChanged)
+        self.ui.tableSuggestions.clicked.connect(self.onTableClicked)
+        # buttons
         self.ui.btnAdd.clicked.connect(self.onBtnAddClicked)
         self.ui.btnDel.clicked.connect(self.onBtnDelClicked)
         self.ui.btnSave.clicked.connect(self.onBtnSaveClicked)
+        self.ui.btnApprove.clicked.connect(self.onBtnApproveClicked)
+        self.ui.btnReject.clicked.connect(self.onBtnRejectClicked)
+        # data input widgets
+        self.ui.textText.textChanged.connect(self.onTextChanged)
+        self.ui.checkActive.stateChanged.connect(self.onCheckClicked)
 
-        # show UI
+        # update UI depending on user level
+        self.setupControls()
         self.refreshView()
-        self.show()
 
+    # UI utility methods
     def refreshView(self):
         twidth = self.ui.tableSuggestions.frameGeometry().width() - 30
         self.ui.tableSuggestions.setColumnWidth(0, twidth * 0.05)
         self.ui.tableSuggestions.setColumnWidth(1, twidth * 0.10)
-        self.ui.tableSuggestions.setColumnWidth(2, twidth * 0.60)
+        self.ui.tableSuggestions.setColumnWidth(2, twidth * 0.55)
         self.ui.tableSuggestions.setColumnWidth(3, twidth * 0.10)
-        self.ui.tableSuggestions.setColumnWidth(4, twidth * 0.10)
+        self.ui.tableSuggestions.setColumnWidth(4, twidth * 0.15)
         self.ui.tableSuggestions.setColumnWidth(5, twidth * 0.05)
 
+    def setupControls(self):
+        if self._logged_user["level"] == typedefs.LevelAdmin:
+            self.ui.btnApprove.setVisible(True)
+            self.ui.btnReject.setVisible(True)
+
+    def updateUiControls(self):
+        self._model_search_proxy.invalidate()
+        if self._model_suggestions.has_dirty_data:
+            self.ui.btnSave.setEnabled(True)
+        else:
+            self.ui.btnSave.setEnabled(False)
+
+    # business logic
     def addSuggestion(self):
-        print("add sugg record")
-        src = self.m_model_suggestions.addSuggestionRecord()
-        # dest = self.m_model_search_proxy.mapFromSource(src)
-        # self.ui.tableSuggestions.selectionModel().setCurrentIndex(index, QItemSelectionModel.Select
-        #                                                           | QItemSelectionModel.Rows)
+        source_index = self._model_suggestions.addSuggestionRecord(1)  # 1 = Кузнецов С.А. (TODO - активный юзер)
 
-    def updateSuggestion(self):
-        print("update rec action")
+        index_to_select = self._model_search_proxy.mapFromSource(source_index)
+        self.ui.tableSuggestions.selectionModel().clear()
+        self.ui.tableSuggestions.selectionModel().setCurrentIndex(index_to_select, QItemSelectionModel.Select
+                                                                  | QItemSelectionModel.Rows)
+        self.updateUiControls()
 
-    def delSuggestion(self):
-        print("del rec action")
+    def saveSuggestions(self):
+        self._model_suggestions.saveDirtyData()
+        self.updateUiControls()
+
+    def delSuggestion(self, index):
+        self._model_suggestions.deleteSuggestionRecordAtIndex(index)
+
+    def updateSuggestionData(self):
+        self._data_mapper.submit()
+        self.updateUiControls()
+
+    def approveSuggestion(self, index):
+        status = index.data(typedefs.RoleStatus)
+        if status == typedefs.StatusApproved:
+            QMessageBox.information(self, "Ошибка", "Предложение уже одобрено.")
+            return
+        elif status == typedefs.StatusRejected:
+            result = QMessageBox.question(self, "Вопрос", "Одобрить уже отклонённое предложение?")
+            if result != QMessageBox.Yes:
+                return
+
+        self._model_suggestions.approveSuggestion(index, 1)  # TODO current user ref
+        self.updateUiControls()
+
+    def rejectSuggestion(self, index):
+        status = index.data(typedefs.RoleStatus)
+        if status == typedefs.StatusRejected:
+            QMessageBox.information(self, "Ошибка", "Предложение уже отклонено.")
+            return
+        elif status == typedefs.StatusApproved:
+            result = QMessageBox.question(self, "Вопрос", "Отклонить уже одобренное предложение?")
+            if result != QMessageBox.Yes:
+                return
+
+        self._model_suggestions.rejectSuggestion(index, 1)  # TODO current user ref
+        self.updateUiControls()
 
     # event handlers
     def resizeEvent(self, event):
         self.refreshView()
 
     def onSelectionChanged(self, current, previous):
-        self.m_data_mapper.setCurrentModelIndex(current)
+        # TODO !!!disable data input controls according to user level!!!
+        self._data_mapper.setCurrentModelIndex(current)
 
     def onTableClicked(self, index):
-        self.m_data_mapper.setCurrentModelIndex(index)
+        pass
 
     def onBtnAddClicked(self):
         self.addSuggestion()
 
     def onBtnSaveClicked(self):
-        self.updateSuggestion()
+        self.saveSuggestions()
 
     def onBtnDelClicked(self):
-        self.delSuggestion()
+        if not self.ui.tableSuggestions.selectionModel().hasSelection():
+            QMessageBox.information(self, "Ошибка", "Удлить: пожалуйста, выберите запись.")
+            return
+        else:
+            result = QMessageBox.question(self, "Внимание!", "Вы действительно хотите удалить выбранную запись?")
+            if result != QMessageBox.Yes:
+                return
+
+            selected_index = self.ui.tableSuggestions.selectionModel().selectedIndexes()[0]
+            index_to_delete = self._model_search_proxy.mapToSource(selected_index)
+            self.delSuggestion(index_to_delete)
+
+    def onBtnApproveClicked(self):
+        if not self.ui.tableSuggestions.selectionModel().hasSelection():
+            QMessageBox.information(self, "Ошибка", "Одобрить: пожалуйста, выберите запись.")
+            return
+
+        selected_index = self.ui.tableSuggestions.selectionModel().selectedIndexes()[0]
+        index_to_approve = self._model_search_proxy.mapToSource(selected_index)
+        self.approveSuggestion(index_to_approve)
+
+    def onBtnRejectClicked(self):
+        if not self.ui.tableSuggestions.selectionModel().hasSelection():
+            QMessageBox.information(self, "Ошибка", "Отклонить: пожалуйста, выберите запись.")
+            return
+
+        selected_index = self.ui.tableSuggestions.selectionModel().selectedIndexes()[0]
+        index_to_reject = self._model_search_proxy.mapToSource(selected_index)
+        self.rejectSuggestion(index_to_reject)
+
+    def onTextChanged(self):
+        if self.ui.textText.hasFocus():
+            self.updateSuggestionData()
+
+    def onCheckClicked(self, checked):
+        if self.ui.checkActive.hasFocus():
+            self.updateSuggestionData()

@@ -32,6 +32,21 @@ class DbManager(QObject):
         print(query.lastError().text())
         return query
 
+    def checkLogin(self, uid, passw):
+        """        
+        Checks user against the database
+        :param uid: int - user id
+        :param passw: str - user password
+        :return: tuple(bool, int) - check result, user level
+        """
+
+        # TODO hash passwords
+        query = self.execSimpleQuery("SELECT * FROM `user` WHERE user_id = "
+                                     + str(uid) + " AND user_pass = '"
+                                     + str(passw) + "'")
+        query.next()
+        return bool(query.numRowsAffected()), query.value(3)
+
     def getSuggestionList(self):
         query = self.execSimpleQuery("SELECT * FROM sug WHERE sug_id <> 0")
         tmplist = list()
@@ -47,3 +62,17 @@ class DbManager(QObject):
             tmpdict[query.value(0)] = codecs.decode(query.value(1).encode("cp1251"))
         return tmpdict
 
+    def insertRec(self, record):
+        print("db insert record:", record)
+        return 1000
+
+    def updateRec(self, record):
+        print("db update record:", record.item_id)
+        return True
+
+    def deleteRec(self, record):
+        if record.item_id != 0:
+            print("db delete record:", record.item_id)
+        else:
+            print("db delete record:", record.item_id, "skip")
+        return True
