@@ -2,10 +2,13 @@ import sys
 import dbman
 import typedefs
 import logindialog
+from mapmodel import MapModel
 from suggestionmodel import SuggestionModel
+from suggestionsearchproxymodel import SuggestionSearchProxyModel
 from PyQt5 import uic
 from PyQt5.QtWidgets import QMainWindow, QAbstractItemView, QDataWidgetMapper, QMessageBox, QDialog
 from PyQt5.QtCore import Qt, QSortFilterProxyModel, QItemSelectionModel
+
 
 # TODO record commentaries from other users
 class MainWindow(QMainWindow):
@@ -18,8 +21,12 @@ class MainWindow(QMainWindow):
 
         self._dbman = dbman.DbManager(self)
 
+        self._model_authors = MapModel(self)
+
+        # self._model_search_proxy = QSortFilterProxyModel(self)
         self._model_suggestions = SuggestionModel(parent=self, dbmanager=self._dbman)
-        self._model_search_proxy = QSortFilterProxyModel(self)
+        self._model_search_proxy = SuggestionSearchProxyModel(self)
+        self._model_search_proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self._model_search_proxy.setSourceModel(self._model_suggestions)
 
         self._data_mapper = QDataWidgetMapper(self)
@@ -36,7 +43,6 @@ class MainWindow(QMainWindow):
         dialog = logindialog.LoginDialog(parent=self, users=users, dbman=self._dbman)
         if dialog.exec() == QDialog.Accepted:
             self._logged_user = dialog.logged_user
-            print(self._logged_user)
             return True
         return False
 
@@ -60,6 +66,8 @@ class MainWindow(QMainWindow):
             return
         self.setWindowTitle(self.windowTitle() + ", пользователь: " + self._logged_user["name"])
 
+        self._model_authors.initModel(self._model_suggestions._users)
+
         # init instances
         self._data_mapper.setModel(self._model_search_proxy)
         self._data_mapper.setSubmitPolicy(QDataWidgetMapper.ManualSubmit)
@@ -71,6 +79,8 @@ class MainWindow(QMainWindow):
         self._data_mapper.addMapping(self.ui.checkActive, 5)
 
         # init UI
+        self.ui.comboAuthorFilter.setModel(self._model_authors)
+
         self.ui.tableSuggestions.setModel(self._model_search_proxy)
         self.ui.tableSuggestions.setSelectionMode(QAbstractItemView.SingleSelection)
         self.ui.tableSuggestions.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -97,6 +107,10 @@ class MainWindow(QMainWindow):
         # data input widgets
         self.ui.textText.textChanged.connect(self.onTextChanged)
         self.ui.checkActive.stateChanged.connect(self.onCheckClicked)
+        # search widgets
+        self.ui.editSearch.textChanged.connect(self.onEditSearchTextChanged)
+        self.ui.comboAuthorFilter.currentIndexChanged.connect(self.onComboAuthorFilterIndexChanged)
+        self.ui.comboStatusFilter.currentIndexChanged.connect(self.onComboStatusFilterIndexChanged)
 
         # update UI depending on user level
         self.setupControls()
@@ -116,6 +130,8 @@ class MainWindow(QMainWindow):
         if self._logged_user["level"] == typedefs.LevelAdmin:
             self.ui.btnApprove.setVisible(True)
             self.ui.btnReject.setVisible(True)
+            self.ui.checkActive.setEnabled(True)
+            self.ui.textText.setEnabled(True)
 
     def updateUiControls(self):
         self._model_search_proxy.invalidate()
@@ -176,11 +192,22 @@ class MainWindow(QMainWindow):
         self.refreshView()
 
     def onSelectionChanged(self, current, previous):
-        # TODO !!!disable data input controls according to user level!!!
+        if not self.ui.tableSuggestions.selectionModel().hasSelection():
+            return
+
+        current_mapped = self._model_search_proxy.mapToSource(current)
+        if self._logged_user["level"] != typedefs.LevelAdmin:
+            if current_mapped.data(typedefs.RoleAuthor) == self._logged_user["id"]:
+                self.ui.checkActive.setEnabled(True)
+                self.ui.textText.setEnabled(True)
+            else:
+                self.ui.checkActive.setEnabled(False)
+                self.ui.textText.setEnabled(False)
+
         self._data_mapper.setCurrentModelIndex(current)
 
     def onTableClicked(self, index):
-        pass
+        self._data_mapper.setCurrentModelIndex(index)
 
     def onBtnAddClicked(self):
         self.addSuggestion()
@@ -190,15 +217,22 @@ class MainWindow(QMainWindow):
 
     def onBtnDelClicked(self):
         if not self.ui.tableSuggestions.selectionModel().hasSelection():
-            QMessageBox.information(self, "Ошибка", "Удлить: пожалуйста, выберите запись.")
+            QMessageBox.information(self, "Ошибка", "Удалить: пожалуйста, выберите запись.")
             return
         else:
+            selected_index = self.ui.tableSuggestions.selectionModel().selectedIndexes()[0]
+            index_to_delete = self._model_search_proxy.mapToSource(selected_index)
+
+            # TODO extract permission checks to a separate method(object)?
+            if self._logged_user["level"] != typedefs.LevelAdmin and \
+                    index_to_delete.data(typedefs.RoleAuthor) != self._logged_user["id"]:
+                QMessageBox.warning(self, "Ошибка", "У вас недостаточно прав для удаления данной записи.")
+                return
+
             result = QMessageBox.question(self, "Внимание!", "Вы действительно хотите удалить выбранную запись?")
             if result != QMessageBox.Yes:
                 return
 
-            selected_index = self.ui.tableSuggestions.selectionModel().selectedIndexes()[0]
-            index_to_delete = self._model_search_proxy.mapToSource(selected_index)
             self.delSuggestion(index_to_delete)
 
     def onBtnApproveClicked(self):
@@ -226,3 +260,12 @@ class MainWindow(QMainWindow):
     def onCheckClicked(self, checked):
         if self.ui.checkActive.hasFocus():
             self.updateSuggestionData()
+
+    def onComboAuthorFilterIndexChanged(self, index):
+        print(index)
+
+    def onComboStatusFilterIndexChanged(self, index):
+        print(index)
+
+    def onEditSearchTextChanged(self, text):
+        print(text)

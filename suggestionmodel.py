@@ -84,10 +84,13 @@ class SuggestionModel(QAbstractTableModel):
                 else:
                     raise ValueError("Wrong suggestion status:", self._data[row].item_status)
             elif col == self.ColumnActive:
-                if self._data[row].item_is_active:
+                # return self._data[row].item_is_active
+                if self._data[row].item_is_active == 1:
                     return QVariant("Да")
-                else:
+                elif self._data[row].item_is_active == 2:
                     return QVariant("Нет")
+                else:
+                    return QVariant("INVALID ACTIVITY STATE")
         elif role == Qt.EditRole:
             if col == self.ColumnId:
                 return QVariant(self._data[row].item_id)
@@ -109,10 +112,12 @@ class SuggestionModel(QAbstractTableModel):
                 else:
                     raise ValueError("Wrong suggestion status:", self._data[row].item_status)
             elif col == self.ColumnActive:
-                if self._data[row].item_is_active:
+                if self._data[row].item_is_active == 1:
                     return True
-                else:
+                elif self._data[row].item_is_active == 2:
                     return False
+                else:
+                    return None
         elif role == Qt.BackgroundRole:
             if col == self.ColumnStatus:
                 if self._data[row].item_status == typedefs.StatusPending:
@@ -130,6 +135,8 @@ class SuggestionModel(QAbstractTableModel):
             return QVariant(self._data[row].item_id)
         elif role == typedefs.RoleStatus:
             return QVariant(self._data[row].item_status)
+        elif role == typedefs.RoleAuthor:
+            return QVariant(self._data[row].item_author)
 
         return QVariant()
 

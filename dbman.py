@@ -41,22 +41,24 @@ class DbManager(QObject):
         """
 
         # TODO hash passwords
-        query = self.execSimpleQuery("SELECT * FROM `user` WHERE user_id = "
-                                     + str(uid) + " AND user_pass = '"
-                                     + str(passw) + "'")
+        # query = self.execSimpleQuery("SELECT * FROM `user` WHERE user_id = "
+        #                              + str(uid) + " AND user_pass = '"
+        #                              + str(passw) + "'")
+        query = self.execSimpleQuery("CALL checkUser("
+                                     + str(uid) + ", '"
+                                     + str(passw) + "')")
         query.next()
-        return bool(query.numRowsAffected()), query.value(3)
+        return bool(query.numRowsAffected()), query.value(0)
 
     def getSuggestionList(self):
-        query = self.execSimpleQuery("SELECT * FROM sug WHERE sug_id <> 0")
+        query = self.execSimpleQuery("CALL getSuggestionsAll();")
         tmplist = list()
         while query.next():
             tmplist.append(SuggestionItem.fromSqlRecord(query.record()))
         return tmplist
 
     def getUserDict(self):
-        # query = self.execSimpleQuery("SELECT user_id, CONVERT(user_name USING utf8) FROM user WHERE user_id <> 0")
-        query = self.execSimpleQuery("SELECT user_id, user_name FROM user WHERE user_id <> 0")
+        query = self.execSimpleQuery("CALL getUsersAll();")
         tmpdict = dict()
         while query.next():
             tmpdict[query.value(0)] = codecs.decode(query.value(1).encode("cp1251"))

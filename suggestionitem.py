@@ -5,7 +5,7 @@ import typedefs
 class SuggestionItem:
     # TODO make properties
     # TODO change to a property sets item_is_dirty = True
-    def __init__(self, id_=None, date=None, text=None, author=None, approver=None, is_active=True,
+    def __init__(self, id_=None, date=None, text=None, author=None, approver=None, is_active=None,
                  status=typedefs.StatusPending, is_dirty=False):
         self.item_id = id_
         self.item_date = date
@@ -35,6 +35,6 @@ class SuggestionItem:
                    , text=codecs.decode(record.value(2).encode("cp1251"))
                    , author=record.value(3)
                    , approver=record.value(4)
-                   , is_active=bool(record.value(5))
+                   , is_active=record.value(5)
                    , status=record.value(6)
                    , is_dirty=False)

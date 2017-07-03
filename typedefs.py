@@ -2,6 +2,7 @@ from PyQt5.QtCore import Qt
 
 RoleNodeId = Qt.UserRole + 1
 RoleStatus = Qt.UserRole + 2
+RoleAuthor = Qt.UserRole + 3
 
 ColorApproved = 0xffBAFAAD
 ColorRejected = 0xffE2E2E2
