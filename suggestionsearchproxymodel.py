@@ -9,6 +9,7 @@ class SuggestionSearchProxyModel(QSortFilterProxyModel):
         super(SuggestionSearchProxyModel, self).__init__(parent)
 
         self.filterAuthor = 0
+        self.filterActive = 0
         self.filterStatus = 0
         self._filterString = ""
         self._filterRegex = re.compile(self._filterString)
@@ -29,12 +30,14 @@ class SuggestionSearchProxyModel(QSortFilterProxyModel):
         source_index = self.sourceModel().index(source_row, self.filterKeyColumn(), source_parent_index)
         if source_index.isValid():
             author = self.sourceModel().index(source_row, 0, source_parent_index).data(typedefs.RoleAuthor)
+            active = self.sourceModel().index(source_row, 0, source_parent_index).data(typedefs.RoleActive)
             status = self.sourceModel().index(source_row, 0, source_parent_index).data(typedefs.RoleStatus)
 
             if self.filterAuthor == 0 or self.filterAuthor == author:
-                if self.filterStatus == 0 or self.filterStatus == author:
-                    for i in range(self.sourceModel().columnCount()):
-                        if self._filterRegex.match(str(self.sourceModel().index(source_row, i, source_parent_index).data(Qt.DisplayRole))):
-                            return True
+                if self.filterActive == 0 or self.filterActive == active:
+                    if self.filterStatus == 0 or self.filterStatus == status:
+                        for i in range(self.sourceModel().columnCount()):
+                            if self._filterRegex.match(str(self.sourceModel().index(source_row, i, source_parent_index).data(Qt.DisplayRole))):
+                                return True
 
         return False

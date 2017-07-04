@@ -65,16 +65,25 @@ class DbManager(QObject):
         return tmpdict
 
     def insertRec(self, record):
-        print("db insert record:", record)
-        return 1000
+        # TODO make encoder helper functions
+        query = self.execSimpleQuery("CALL insertSuggestion('" +
+                                     codecs.decode(record.item_text.encode("utf-8"), encoding="cp1251") + "', " +
+                                     str(record.item_author) + ", " +
+                                     str(record.item_approver) + ", " +
+                                     str(record.item_is_active) + ", " +
+                                     str(record.item_status) + ")")
+        query.next()
+        return query.value(0)
 
     def updateRec(self, record):
+        # TODO implement
         print("db update record:", record.item_id)
         return True
 
     def deleteRec(self, record):
+        # TODO implement
         if record.item_id != 0:
             print("db delete record:", record.item_id)
         else:
-            print("db delete record:", record.item_id, "skip")
+            raise ValueError("Wrong record id to delete:", record.it)
         return True

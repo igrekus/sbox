@@ -58,7 +58,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="lblStatus">
+           <widget class="QLabel" name="lblStatus_2">
             <property name="text">
              <string>Статус:</string>
             </property>
@@ -66,6 +66,37 @@
           </item>
           <item>
            <widget class="QComboBox" name="comboStatusFilter">
+            <item>
+             <property name="text">
+              <string>Все</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Одобрено</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>На рассмотрении</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Отклонено</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lblStatus">
+            <property name="text">
+             <string>Активно:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboActiveFilter">
             <item>
              <property name="text">
               <string>Все</string>

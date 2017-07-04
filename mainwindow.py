@@ -57,7 +57,6 @@ class MainWindow(QMainWindow):
             raise RuntimeError("Database connection problem.")
 
         # init models
-        # TODO separate user_dict init
         self._model_suggestions.initModel()
 
         # login
@@ -110,6 +109,7 @@ class MainWindow(QMainWindow):
         # search widgets
         self.ui.editSearch.textChanged.connect(self.onEditSearchTextChanged)
         self.ui.comboAuthorFilter.currentIndexChanged.connect(self.onComboAuthorFilterIndexChanged)
+        self.ui.comboActiveFilter.currentIndexChanged.connect(self.onComboActiveFilterIndexChanged)
         self.ui.comboStatusFilter.currentIndexChanged.connect(self.onComboStatusFilterIndexChanged)
 
         # update UI depending on user level
@@ -142,7 +142,7 @@ class MainWindow(QMainWindow):
 
     # business logic
     def addSuggestion(self):
-        source_index = self._model_suggestions.addSuggestionRecord(1)  # 1 = Кузнецов С.А. (TODO - активный юзер)
+        source_index = self._model_suggestions.addSuggestionRecord(self._logged_user["id"])
 
         index_to_select = self._model_search_proxy.mapFromSource(source_index)
         self.ui.tableSuggestions.selectionModel().clear()
@@ -171,7 +171,7 @@ class MainWindow(QMainWindow):
             if result != QMessageBox.Yes:
                 return
 
-        self._model_suggestions.approveSuggestion(index, 1)  # TODO current user ref
+        self._model_suggestions.approveSuggestion(index, self._logged_user["id"])
         self.updateUiControls()
 
     def rejectSuggestion(self, index):
@@ -184,7 +184,7 @@ class MainWindow(QMainWindow):
             if result != QMessageBox.Yes:
                 return
 
-        self._model_suggestions.rejectSuggestion(index, 1)  # TODO current user ref
+        self._model_suggestions.rejectSuggestion(index, self._logged_user["id"])
         self.updateUiControls()
 
     # event handlers
@@ -262,10 +262,18 @@ class MainWindow(QMainWindow):
             self.updateSuggestionData()
 
     def onComboAuthorFilterIndexChanged(self, index):
-        print(index)
+        self._model_search_proxy.filterAuthor = self.ui.comboAuthorFilter.currentData(typedefs.RoleNodeId)
+        self._model_search_proxy.invalidate()
+
+    def onComboActiveFilterIndexChanged(self, index):
+        self._model_search_proxy.filterActive = index
+        self._model_search_proxy.invalidate()
 
     def onComboStatusFilterIndexChanged(self, index):
-        print(index)
+        self._model_search_proxy.filterStatus = index
+        self._model_search_proxy.invalidate()
 
     def onEditSearchTextChanged(self, text):
-        print(text)
+        self._model_search_proxy.filterString = text
+        self._model_search_proxy.invalidate()
+

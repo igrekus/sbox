@@ -5,7 +5,7 @@ import typedefs
 class SuggestionItem:
     # TODO make properties
     # TODO change to a property sets item_is_dirty = True
-    def __init__(self, id_=None, date=None, text=None, author=None, approver=None, is_active=None,
+    def __init__(self, id_=None, date=None, text="", author=0, approver=0, is_active=1,
                  status=typedefs.StatusPending, is_dirty=False):
         self.item_id = id_
         self.item_date = date

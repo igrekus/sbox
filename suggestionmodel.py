@@ -84,7 +84,6 @@ class SuggestionModel(QAbstractTableModel):
                 else:
                     raise ValueError("Wrong suggestion status:", self._data[row].item_status)
             elif col == self.ColumnActive:
-                # return self._data[row].item_is_active
                 if self._data[row].item_is_active == 1:
                     return QVariant("Да")
                 elif self._data[row].item_is_active == 2:
@@ -116,8 +115,7 @@ class SuggestionModel(QAbstractTableModel):
                     return True
                 elif self._data[row].item_is_active == 2:
                     return False
-                else:
-                    return None
+
         elif role == Qt.BackgroundRole:
             if col == self.ColumnStatus:
                 if self._data[row].item_status == typedefs.StatusPending:
@@ -137,7 +135,8 @@ class SuggestionModel(QAbstractTableModel):
             return QVariant(self._data[row].item_status)
         elif role == typedefs.RoleAuthor:
             return QVariant(self._data[row].item_author)
-
+        elif role == typedefs.RoleActive:
+            return QVariant(self._data[row].item_is_active)
         return QVariant()
 
     def setData(self, index, data, role=None):
@@ -150,19 +149,23 @@ class SuggestionModel(QAbstractTableModel):
                 self.has_dirty_data = True
                 return True
             if col == self.ColumnActive:
-                self._data[row].item_is_active = data
+                if data:
+                    self._data[row].item_is_active = 1
+                else:
+                    self._data[row].item_is_active = 2
                 self._data[row].item_is_dirty = True
                 self.has_dirty_data = True
                 return True
         return False
 
     def addSuggestionRecord(self, user):
+        # TODO refactor hardcoded constants
         tmpitem = suggestionitem.SuggestionItem(id_=0
                                                 , date=QDate.currentDate()
                                                 , text=""
                                                 , author=user
-                                                , approver=None
-                                                , is_active=True
+                                                , approver=0
+                                                , is_active=1
                                                 , status=typedefs.StatusPending
                                                 , is_dirty=True)
 
@@ -196,7 +199,7 @@ class SuggestionModel(QAbstractTableModel):
                 if rec.item_id > 0:
                     self.updateSuggestionRecord(rec)
                 elif rec.item_id == 0:
-                    self.insertSuggestionRecord(rec)
+                    newid = self.insertSuggestionRecord(rec)
                 else:
                     raise ValueError("Wrong record id:", rec.item_id)
 
@@ -208,7 +211,7 @@ class SuggestionModel(QAbstractTableModel):
         # TODO modify record in a separate method
         self._data[row].item_status = typedefs.StatusApproved
         self._data[row].item_approver = user
-        self._data[row].item_is_active = True
+        self._data[row].item_is_active = 1
         self._data[row].item_is_dirty = True
         self.has_dirty_data = True
 
@@ -218,7 +221,7 @@ class SuggestionModel(QAbstractTableModel):
         # TODO modify record in a separate method
         self._data[row].item_status = typedefs.StatusRejected
         self._data[row].item_approver = user
-        self._data[row].item_is_active = False
+        self._data[row].item_is_active = 2
         self._data[row].item_is_dirty = True
         self.has_dirty_data = True
 

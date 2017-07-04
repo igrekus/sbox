@@ -49,7 +49,7 @@ class MapModel(QAbstractListModel):
         if role == Qt.DisplayRole:
             return self.strList[row]
         elif role == typedefs.RoleNodeId:
-            return self.getId(self, self.strList[row])
+            return QVariant(self.getId(self.strList[row]))
 
     def getId(self, search_str=""):
         for i, string in self.mapData.items():
