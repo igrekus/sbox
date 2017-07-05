@@ -35,6 +35,9 @@
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <item>
            <widget class="QLineEdit" name="editSearch">
+            <property name="toolTip">
+             <string>Фильтровать предложения по введённой строке</string>
+            </property>
             <property name="placeholderText">
              <string>Поиск...</string>
             </property>
@@ -55,6 +58,9 @@
               <height>0</height>
              </size>
             </property>
+            <property name="toolTip">
+             <string>Фильтровать предложения по автору</string>
+            </property>
            </widget>
           </item>
           <item>
@@ -66,6 +72,9 @@
           </item>
           <item>
            <widget class="QComboBox" name="comboStatusFilter">
+            <property name="toolTip">
+             <string>Фильтровать предложения по статусу</string>
+            </property>
             <item>
              <property name="text">
               <string>Все</string>
@@ -97,6 +106,9 @@
           </item>
           <item>
            <widget class="QComboBox" name="comboActiveFilter">
+            <property name="toolTip">
+             <string>Фильтроватьпредложения по активности</string>
+            </property>
             <item>
              <property name="text">
               <string>Все</string>
@@ -150,6 +162,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="btnSave">
+            <property name="toolTip">
+             <string>Записать все изменённые данные</string>
+            </property>
             <property name="text">
              <string>Записать</string>
             </property>
@@ -170,6 +185,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="btnAdd">
+            <property name="toolTip">
+             <string>Добавить новое предложение</string>
+            </property>
             <property name="text">
              <string>Добавить</string>
             </property>
@@ -177,6 +195,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="btnDel">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="toolTip">
+             <string>Удалить выбранное предложение</string>
+            </property>
             <property name="text">
              <string>Удалить</string>
             </property>
@@ -331,6 +355,9 @@
               </item>
               <item>
                <widget class="QPushButton" name="btnApprove">
+                <property name="toolTip">
+                 <string>Одобрить выбранное предложение</string>
+                </property>
                 <property name="text">
                  <string>Одобрить</string>
                 </property>
@@ -338,6 +365,9 @@
               </item>
               <item>
                <widget class="QPushButton" name="btnReject">
+                <property name="toolTip">
+                 <string>Отклонить выбранное предложение</string>
+                </property>
                 <property name="text">
                  <string>Отклонить</string>
                 </property>

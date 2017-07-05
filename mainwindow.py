@@ -16,6 +16,9 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(parent)
         # self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
+        self.setAttribute(Qt.WA_QuitOnClose)
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
         # create instance variables
         self.ui = uic.loadUi("mw.ui", self)
 
@@ -36,8 +39,19 @@ class MainWindow(QMainWindow):
         self.initDialog()
 
     def closeEvent(self, event):
+        if not self._logged_user:
+            event.accept()
+            sys.exit(10)
+
+        result = QMessageBox.question(self, "Вопрос", "Завершить работу?\nВсе данные будут сохранены.")
+        if result != QMessageBox.Yes:
+            print("Cancel quit.")
+            event.ignore()
+            return
+
+        self._model_suggestions.saveDirtyData()
+        print("Accept quit.")
         event.accept()
-        sys.exit(10)  # TODO: lame hack to override event acceptance
 
     def logIn(self, users):
         dialog = logindialog.LoginDialog(parent=self, users=users, dbman=self._dbman)
@@ -52,9 +66,12 @@ class MainWindow(QMainWindow):
         self.show()
 
         # setup db connection
-        if not self._dbman.connectToDatabase():
+        ok, error_text = self._dbman.connectToDatabase()
+        if not ok:
             # TODO error handling
-            raise RuntimeError("Database connection problem.")
+            QMessageBox.warning(self, "Ошибка!",
+                                "Ошибка подключения к БД:\n\n" + error_text + "\n\nОбратитесь к разработчику ПО.")
+            self.close()
 
         # init models
         self._model_suggestions.initModel()
@@ -195,14 +212,17 @@ class MainWindow(QMainWindow):
         if not self.ui.tableSuggestions.selectionModel().hasSelection():
             return
 
+        # TODO extract access rights check to a separate method
         current_mapped = self._model_search_proxy.mapToSource(current)
         if self._logged_user["level"] != typedefs.LevelAdmin:
             if current_mapped.data(typedefs.RoleAuthor) == self._logged_user["id"]:
                 self.ui.checkActive.setEnabled(True)
                 self.ui.textText.setEnabled(True)
+                self.ui.btnDel.setEnabled(True)
             else:
                 self.ui.checkActive.setEnabled(False)
                 self.ui.textText.setEnabled(False)
+                self.ui.btnDel.setEnabled(False)
 
         self._data_mapper.setCurrentModelIndex(current)
 
@@ -225,7 +245,7 @@ class MainWindow(QMainWindow):
 
             # TODO extract permission checks to a separate method(object)?
             if self._logged_user["level"] != typedefs.LevelAdmin and \
-                    index_to_delete.data(typedefs.RoleAuthor) != self._logged_user["id"]:
+                            index_to_delete.data(typedefs.RoleAuthor) != self._logged_user["id"]:
                 QMessageBox.warning(self, "Ошибка", "У вас недостаточно прав для удаления данной записи.")
                 return
 
@@ -276,4 +296,3 @@ class MainWindow(QMainWindow):
     def onEditSearchTextChanged(self, text):
         self._model_search_proxy.filterString = text
         self._model_search_proxy.invalidate()
-

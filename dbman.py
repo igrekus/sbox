@@ -3,7 +3,7 @@ from suggestionitem import SuggestionItem
 from PyQt5.QtCore import Qt, QObject
 from PyQt5 import QtSql
 
-
+# TODO db error handling
 class DbManager(QObject):
     def __init__(self, parent=None):
         super(DbManager, self).__init__(parent)
@@ -16,13 +16,19 @@ class DbManager(QObject):
         db.setPort(3306)
         db.setUserName("root")
         db.setPassword("")
-        db.setDatabaseName("sbox")
+        db.setDatabaseName("sb")
+
+        # db.setHostName("10.10.15.9")
+        # db.setPort(3306)
+        # db.setUserName("root")
+        # db.setPassword("123456")
+        # db.setDatabaseName("sbox")
 
         if not db.open():
             print("db not open")
-            return False
+            return False, db.lastError().text()
 
-        return True
+        return True, "ok"
 
     def execSimpleQuery(self, str):
         query = QtSql.QSqlQuery(QtSql.QSqlDatabase.database())
@@ -61,7 +67,10 @@ class DbManager(QObject):
         query = self.execSimpleQuery("CALL getUsersAll();")
         tmpdict = dict()
         while query.next():
-            tmpdict[query.value(0)] = codecs.decode(query.value(1).encode("cp1251"))
+            print(query.value(1))
+            print(query.value(1).encode("utf-8"))
+            print(codecs.decode(query.value(1).encode("utf-8").replace("\x98", "\xc8"), encoding="cp1251"))
+            tmpdict[query.value(0)] = codecs.decode(query.value(1).encode("cp1251"), encoding="utf-8")
         return tmpdict
 
     def insertRec(self, record):
@@ -76,14 +85,19 @@ class DbManager(QObject):
         return query.value(0)
 
     def updateRec(self, record):
-        # TODO implement
-        print("db update record:", record.item_id)
-        return True
+        # TODO make encoder helper functions
+        query = self.execSimpleQuery("CALL updateSuggestion(" +
+                                     str(record.item_id) + ", '" +
+                                     codecs.decode(record.item_text.encode("utf-8"), encoding="cp1251") + "', " +
+                                     str(record.item_approver) + ", " +
+                                     str(record.item_is_active) + ", " +
+                                     str(record.item_status) + ")")
+        return query.isValid()  # TODO error handling
 
     def deleteRec(self, record):
-        # TODO implement
-        if record.item_id != 0:
-            print("db delete record:", record.item_id)
-        else:
-            raise ValueError("Wrong record id to delete:", record.it)
+        # TODO change deletion to bool marking
+        if record.item_id == 0:
+            raise ValueError("Wrong record id to delete:", record.item_id)
+
+        query = self.execSimpleQuery("CALL deleteSuggestion(" + str(record.item_id) + ")")
         return True

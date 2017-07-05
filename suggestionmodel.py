@@ -196,12 +196,16 @@ class SuggestionModel(QAbstractTableModel):
     def saveDirtyData(self):
         for rec in self._data:
             if rec.item_is_dirty:
-                if rec.item_id > 0:
-                    self.updateSuggestionRecord(rec)
-                elif rec.item_id == 0:
-                    newid = self.insertSuggestionRecord(rec)
+                assert isinstance(rec.item_text, str)
+                if rec.item_text.strip():
+                    if rec.item_id > 0:
+                        self.updateSuggestionRecord(rec)
+                    elif rec.item_id == 0:
+                        self.insertSuggestionRecord(rec)
+                    else:
+                        raise ValueError("Wrong record id:", rec.item_id)
                 else:
-                    raise ValueError("Wrong record id:", rec.item_id)
+                    print("Suggestion text is empty, skipping.")
 
         self.has_dirty_data = False
 
