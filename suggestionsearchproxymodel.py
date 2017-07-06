@@ -12,7 +12,7 @@ class SuggestionSearchProxyModel(QSortFilterProxyModel):
         self.filterActive = 0
         self.filterStatus = 0
         self._filterString = ""
-        self._filterRegex = re.compile(self._filterString)
+        self._filterRegex = re.compile(self._filterString, flags=re.IGNORECASE)
 
     @property
     def filterString(self):
@@ -22,7 +22,7 @@ class SuggestionSearchProxyModel(QSortFilterProxyModel):
     def filterString(self, string):
         if type(string) == str:
             self._filterString = string
-            self._filterRegex = re.compile(string)
+            self._filterRegex = re.compile(string, flags=re.IGNORECASE)
         else:
             raise TypeError("Filter must be a str.")
 
@@ -37,7 +37,7 @@ class SuggestionSearchProxyModel(QSortFilterProxyModel):
                 if self.filterActive == 0 or self.filterActive == active:
                     if self.filterStatus == 0 or self.filterStatus == status:
                         for i in range(self.sourceModel().columnCount()):
-                            if self._filterRegex.match(str(self.sourceModel().index(source_row, i, source_parent_index).data(Qt.DisplayRole))):
+                            if self._filterRegex.findall(str(self.sourceModel().index(source_row, i, source_parent_index).data(Qt.DisplayRole))):
                                 return True
 
         return False

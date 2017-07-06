@@ -32,7 +32,7 @@ class SuggestionItem:
             raise ValueError("Wrong SQL record.")
         return cls(id_=record.value(0)
                    , date=record.value(1)
-                   , text=codecs.decode(record.value(2).encode("cp1251"))
+                   , text=codecs.decode(record.value(2).replace("Р", "РЄ").encode("cp1251")).replace("Ъ", "И")
                    , author=record.value(3)
                    , approver=record.value(4)
                    , is_active=record.value(5)

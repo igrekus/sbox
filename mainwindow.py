@@ -70,7 +70,7 @@ class MainWindow(QMainWindow):
         if not ok:
             # TODO error handling
             QMessageBox.warning(self, "Ошибка!",
-                                "Ошибка подключения к БД:\n\n" + error_text + "\n\nОбратитесь к разработчику ПО.")
+                                "Ошибка инииализации:\n\n" + error_text + "\n\nОбратитесь к разработчику ПО.")
             self.close()
 
         # init models
@@ -149,6 +149,7 @@ class MainWindow(QMainWindow):
             self.ui.btnReject.setVisible(True)
             self.ui.checkActive.setEnabled(True)
             self.ui.textText.setEnabled(True)
+            self.ui.btnDel.setEnabled(True)
 
     def updateUiControls(self):
         self._model_search_proxy.invalidate()

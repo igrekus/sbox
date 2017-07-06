@@ -3,6 +3,7 @@ from suggestionitem import SuggestionItem
 from PyQt5.QtCore import Qt, QObject
 from PyQt5 import QtSql
 
+
 # TODO db error handling
 class DbManager(QObject):
     def __init__(self, parent=None):
@@ -12,28 +13,43 @@ class DbManager(QObject):
     def connectToDatabase(self):
         db = QtSql.QSqlDatabase.addDatabase("QMYSQL")
 
-        db.setHostName("localhost")
-        db.setPort(3306)
-        db.setUserName("root")
-        db.setPassword("")
-        db.setDatabaseName("sb")
+        try:
+            f = open("settings.ini")
+        except IOError:
+            return False, str("Settings.ini not found.")
 
-        # db.setHostName("10.10.15.9")
-        # db.setPort(3306)
-        # db.setUserName("root")
-        # db.setPassword("123456")
-        # db.setDatabaseName("sbox")
+        lines = f.readlines()
+        f.close()
+
+        settings = dict()
+        for s in lines:
+            print(s)
+            if s.strip() and s[0] != "#":
+                sett = s.strip().split("=")
+                settings[sett[0]] = sett[1]
+            else:
+                continue
+
+        db.setHostName(settings["host"])
+        db.setPort(int(settings["port"]))
+        db.setUserName(settings["username"])
+        db.setPassword(settings["password"])
+        db.setDatabaseName(settings["database"])
+
+        # db.setConnectOptions("charset=utf8")
 
         if not db.open():
             print("db not open")
             return False, db.lastError().text()
 
+        # print(db.connectOptions())
+
         return True, "ok"
 
-    def execSimpleQuery(self, str):
+    def execSimpleQuery(self, string):
         query = QtSql.QSqlQuery(QtSql.QSqlDatabase.database())
         # query = QtSql.QSqlQuery()
-        query.exec(str)
+        query.exec(string)
         print(query.lastQuery(), "rows:", query.numRowsAffected())
         print(query.lastError().text())
         return query
@@ -67,16 +83,36 @@ class DbManager(QObject):
         query = self.execSimpleQuery("CALL getUsersAll();")
         tmpdict = dict()
         while query.next():
-            print(query.value(1))
-            print(query.value(1).encode("utf-8"))
-            print(codecs.decode(query.value(1).encode("utf-8").replace("\x98", "\xc8"), encoding="cp1251"))
-            tmpdict[query.value(0)] = codecs.decode(query.value(1).encode("cp1251"), encoding="utf-8")
+            # cp1251 = "Р°Р±РІРіРґРµС‘Р¶Р·РёР№РєР»РјРЅРѕРїСЂСЃС‚СѓС„С…СЃС‡С€С‰СЊС‹СЉСЌСЋСЏ"
+            # print(cp1251)
+            # cp1251bytes = cp1251.encode("cp1251")
+            # print(cp1251bytes)
+            # utf8 = cp1251bytes.decode(encoding="utf-8")
+            # print(utf8)
+            #
+            # # Р
+            # # РЄ
+            # cp1251 = "РђР‘Р’Р“Р”Р•РЃР–Р—РР™РљР›РњРќРћРџР РЎРўРЈР¤РҐР¦Р§РЁР©РЄР«Р¬Р­Р®РЇ"
+            # print(cp1251)
+            # cp1251bytes = cp1251.replace("Р", "РЄ").encode("cp1251")
+            # print(cp1251bytes)
+            # utf8 = cp1251bytes.decode(encoding="utf-8")
+            # print(utf8)
+
+            # raise ValueError("break")
+            # print("-------------")
+            # print(query.value(1))
+            # print(query.value(1).encode("cp1251"))
+            # print(codecs.decode(query.value(1).replace("Р", "РЄ").encode("cp1251"), encoding="utf-8").replace("Ъ", "И"))
+            tmpdict[query.value(0)] = codecs.decode(query.value(1).replace("Р", "РЄ").encode("cp1251"),
+                                                    encoding="utf-8").replace("Ъ", "И")
         return tmpdict
 
     def insertRec(self, record):
         # TODO make encoder helper functions
         query = self.execSimpleQuery("CALL insertSuggestion('" +
-                                     codecs.decode(record.item_text.encode("utf-8"), encoding="cp1251") + "', " +
+                                     codecs.decode(record.item_text.replace("И", "Ъ").encode("utf-8"),
+                                                   encoding="cp1251").replace("РЄ", "Р") + "', " +
                                      str(record.item_author) + ", " +
                                      str(record.item_approver) + ", " +
                                      str(record.item_is_active) + ", " +
@@ -88,7 +124,9 @@ class DbManager(QObject):
         # TODO make encoder helper functions
         query = self.execSimpleQuery("CALL updateSuggestion(" +
                                      str(record.item_id) + ", '" +
-                                     codecs.decode(record.item_text.encode("utf-8"), encoding="cp1251") + "', " +
+                                     codecs.decode(record.item_text.replace("И", "Ъ").encode("utf-8"),
+                                                   encoding="cp1251").replace("РЄ", "Р") + "', " +
+                                     # codecs.decode(record.item_text.encode("utf-8"), encoding="cp1251") + "', " +
                                      str(record.item_approver) + ", " +
                                      str(record.item_is_active) + ", " +
                                      str(record.item_status) + ")")
