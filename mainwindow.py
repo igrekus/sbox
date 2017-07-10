@@ -7,7 +7,7 @@ from suggestionmodel import SuggestionModel
 from suggestionsearchproxymodel import SuggestionSearchProxyModel
 from PyQt5 import uic
 from PyQt5.QtWidgets import QMainWindow, QAbstractItemView, QDataWidgetMapper, QMessageBox, QDialog
-from PyQt5.QtCore import Qt, QSortFilterProxyModel, QItemSelectionModel
+from PyQt5.QtCore import Qt, QItemSelectionModel, QByteArray
 
 
 # TODO record commentaries from other users
@@ -148,7 +148,8 @@ class MainWindow(QMainWindow):
             self.ui.btnApprove.setVisible(True)
             self.ui.btnReject.setVisible(True)
             self.ui.checkActive.setEnabled(True)
-            self.ui.textText.setEnabled(True)
+            # self.ui.textText.setEnabled(True)
+            self.ui.textText.setReadOnly(False)
             self.ui.btnDel.setEnabled(True)
 
     def updateUiControls(self):
@@ -218,11 +219,13 @@ class MainWindow(QMainWindow):
         if self._logged_user["level"] != typedefs.LevelAdmin:
             if current_mapped.data(typedefs.RoleAuthor) == self._logged_user["id"]:
                 self.ui.checkActive.setEnabled(True)
-                self.ui.textText.setEnabled(True)
+                # self.ui.textText.setEnabled(True)
+                self.ui.textText.setReadOnly(False)
                 self.ui.btnDel.setEnabled(True)
             else:
                 self.ui.checkActive.setEnabled(False)
-                self.ui.textText.setEnabled(False)
+                # self.ui.textText.setEnabled(False)
+                self.ui.textText.setReadOnly(True)
                 self.ui.btnDel.setEnabled(False)
 
         self._data_mapper.setCurrentModelIndex(current)
@@ -240,21 +243,21 @@ class MainWindow(QMainWindow):
         if not self.ui.tableSuggestions.selectionModel().hasSelection():
             QMessageBox.information(self, "Ошибка", "Удалить: пожалуйста, выберите запись.")
             return
-        else:
-            selected_index = self.ui.tableSuggestions.selectionModel().selectedIndexes()[0]
-            index_to_delete = self._model_search_proxy.mapToSource(selected_index)
 
-            # TODO extract permission checks to a separate method(object)?
-            if self._logged_user["level"] != typedefs.LevelAdmin and \
-                            index_to_delete.data(typedefs.RoleAuthor) != self._logged_user["id"]:
-                QMessageBox.warning(self, "Ошибка", "У вас недостаточно прав для удаления данной записи.")
-                return
+        selected_index = self.ui.tableSuggestions.selectionModel().selectedIndexes()[0]
+        index_to_delete = self._model_search_proxy.mapToSource(selected_index)
 
-            result = QMessageBox.question(self, "Внимание!", "Вы действительно хотите удалить выбранную запись?")
-            if result != QMessageBox.Yes:
-                return
+        # TODO extract permission checks to a separate method(object)?
+        if self._logged_user["level"] != typedefs.LevelAdmin and \
+                        index_to_delete.data(typedefs.RoleAuthor) != self._logged_user["id"]:
+            QMessageBox.warning(self, "Ошибка", "У вас недостаточно прав для удаления данной записи.")
+            return
 
-            self.delSuggestion(index_to_delete)
+        result = QMessageBox.question(self, "Внимание!", "Вы действительно хотите удалить выбранную запись?")
+        if result != QMessageBox.Yes:
+            return
+
+        self.delSuggestion(index_to_delete)
 
     def onBtnApproveClicked(self):
         if not self.ui.tableSuggestions.selectionModel().hasSelection():

@@ -23,7 +23,7 @@ class DbManager(QObject):
 
         settings = dict()
         for s in lines:
-            print(s)
+            # print(s)
             if s.strip() and s[0] != "#":
                 sett = s.strip().split("=")
                 settings[sett[0]] = sett[1]
@@ -135,7 +135,8 @@ class DbManager(QObject):
     def deleteRec(self, record):
         # TODO change deletion to bool marking
         if record.item_id == 0:
-            raise ValueError("Wrong record id to delete:", record.item_id)
+            return
+            # raise ValueError("Wrong record id to delete:", record.item_id)
 
         query = self.execSimpleQuery("CALL deleteSuggestion(" + str(record.item_id) + ")")
         return True

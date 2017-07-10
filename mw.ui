@@ -239,7 +239,7 @@
                  <enum>QFormLayout::WrapAllRows</enum>
                 </property>
                 <item row="0" column="0">
-                 <widget class="QLabel" name="lblId">
+                 <widget class="QLabel" name="lblIdLabel">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                     <horstretch>0</horstretch>
@@ -248,19 +248,6 @@
                   </property>
                   <property name="text">
                    <string>Номер:</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="0" column="1">
-                 <widget class="QLineEdit" name="editId">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
                   </property>
                  </widget>
                 </item>
@@ -274,6 +261,19 @@
                   </property>
                   <property name="text">
                    <string>Автор:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QLineEdit" name="editAuthor">
+                  <property name="enabled">
+                   <bool>true</bool>
+                  </property>
+                  <property name="frame">
+                   <bool>false</bool>
+                  </property>
+                  <property name="readOnly">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
@@ -293,14 +293,23 @@
                 <item row="2" column="1">
                  <widget class="QLineEdit" name="editApprover">
                   <property name="enabled">
+                   <bool>true</bool>
+                  </property>
+                  <property name="frame">
                    <bool>false</bool>
+                  </property>
+                  <property name="readOnly">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
-                <item row="1" column="1">
-                 <widget class="QLineEdit" name="editAuthor">
-                  <property name="enabled">
+                <item row="0" column="1">
+                 <widget class="QLineEdit" name="editId">
+                  <property name="frame">
                    <bool>false</bool>
+                  </property>
+                  <property name="readOnly">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
@@ -402,7 +411,7 @@
              <item>
               <widget class="QPlainTextEdit" name="textText">
                <property name="enabled">
-                <bool>false</bool>
+                <bool>true</bool>
                </property>
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -415,6 +424,9 @@
                  <width>16777215</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="readOnly">
+                <bool>true</bool>
                </property>
                <property name="placeholderText">
                 <string>Ведите текст предложения...</string>
